@@ -1,24 +1,36 @@
 package org.dieschnittstelle.mobile.android.skeleton;
 
 import androidx.appcompat.app.AppCompatActivity;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 
+import org.dieschnittstelle.mobile.android.skeleton.util.Api;
+import org.dieschnittstelle.mobile.android.skeleton.util.ApiInterface;
 import org.dieschnittstelle.mobile.android.skeleton.util.DatabaseHelper;
 import org.dieschnittstelle.mobile.android.skeleton.classes.Todo;
 import org.dieschnittstelle.mobile.android.skeleton.classes.TodoListAdapter;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton addTaskBtn;
     private Context context;
     private DatabaseHelper helper = new DatabaseHelper(this);
-
+    private ApiInterface apiInterface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,30 +53,283 @@ public class MainActivity extends AppCompatActivity {
         context = getApplicationContext();
         setUpListViewListener();
         Intent intent = getIntent();
-        if (isIntentSet(intent)) {
-            addTodo(intent);
-        }
+        apiInterface = Api.getClient();
+
         Cursor cursor = helper.getAllTodos();
         if (cursor.moveToFirst()) {
             do {
                 Todo databaseTodo = new Todo();
-                databaseTodo.id = cursor.getInt(0);
-                databaseTodo.name = cursor.getString(1);
-                databaseTodo.description = (cursor.getString(2));
-                databaseTodo.status = (cursor.getInt(3) == 0);
+                databaseTodo.setId(cursor.getInt(0));
+                databaseTodo.setName(cursor.getString(1));
+                databaseTodo.setDescription((cursor.getString(2)));
+                databaseTodo.setDone (cursor.getInt(3) == 1);
+                databaseTodo.setExpiry(Long.parseLong(cursor.getString(4)));
+                databaseTodo.setFavourite(cursor.getInt(5) == 1);
+                databaseTodo.setContacts(new Gson().fromJson(cursor.getString(6), ArrayList.class));
                 todos.add(databaseTodo);
-            }while (cursor.moveToNext());
+
+            } while (cursor.moveToNext());
+        }
+
+        System.out.println(todos.isEmpty());
+        if (!todos.isEmpty()) {
+            deleteAllTodosRemote();
+        } else {
+            getTodosRemote();
+        }
+
+
+
+        if (isIntentSet(intent)) {
+            if ("update".equals(intent.getStringExtra("action"))) {
+                Log.e("TAG", "onCreate: ", new Exception());
+                updateTodo(intent);
+                todoAdapter.notifyDataSetChanged();
+            } else {
+                addTodo(intent);
+                todoAdapter.notifyDataSetChanged();
+            }
+        }
+
+        defaultSort();
+    }
+
+    private void getTodosRemote() {
+        Call<Todo[]> call = apiInterface.getTodos();
+        call.enqueue(new Callback<Todo[]>() {
+            @Override
+            public void onResponse(Call<Todo[]> call, Response<Todo[]> response) {
+                Log.d("TAG", response.code() + "");
+                System.out.println(response.body());
+                for (Todo t : response.body()) {
+                    helper.insert(t);
+                    todos.add(t);
+                    todoAdapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Todo[]> call, Throwable t) {
+                Log.d("TAG",   t.getMessage() + "##############");
+                call.cancel();
+            }
+
+
+        });
+    }
+
+    private void deleteAllTodosRemote() {
+        Call<Todo> delteAll = apiInterface.delteAll();
+        delteAll.enqueue(new Callback<Todo>() {
+            @Override
+            public void onResponse(Call<Todo> call, Response<Todo> response) {
+                for (Todo t : todos) {
+                    System.out.println("Print it ");
+                    createTodosRemote(t);
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<Todo> call, Throwable t) {
+                System.out.println(t);
+            }
+        });
+    }
+
+    private void createTodosRemote(Todo todo) {
+        Call<Todo> create = apiInterface.createTodos(todo);
+        create.enqueue(new Callback<Todo>() {
+            @Override
+            public void onResponse(Call<Todo> call, Response<Todo> response) {
+                System.out.println(response.body());
+            }
+
+            @Override
+            public void onFailure(Call<Todo> call, Throwable t) {
+                System.out.println("Fail " + t);
+                call.cancel();
+            }
+        });
+    }
+
+    private void updateTodo(Intent intent) {
+        String intentTodo = intent.getSerializableExtra("todo").toString();
+        Todo newTodo = (new Gson()).fromJson(String.valueOf(intentTodo), Todo.class);
+        boolean deleted = helper.deleteTodo(newTodo.getId()+ "");
+        if (deleted) {
+            boolean insertSuccess = helper.insert(newTodo);
+            if (insertSuccess) {
+                updateTodoRemote(newTodo.getId() + "", newTodo);
+            }
         }
 
     }
 
+    private void updateTodoRemote(String id, Todo todo) {
+        Call<Todo> update = apiInterface.updateTodo(id, todo);
+        update.enqueue(new Callback<Todo>() {
+            @Override
+            public void onResponse(Call<Todo> call, Response<Todo> response) {
+                System.out.println(response.body());
+            }
+
+            @Override
+            public void onFailure(Call<Todo> call, Throwable t) {
+                System.out.println("Fail " + t);
+                call.cancel();
+            }
+        });
+    }
+
+    private void defaultSort() {
+        sortFavourite();
+        sortDate();
+        sortDone();
+    }
+
+    private void reverseSort() {
+        sortDate();
+        sortFavourite();
+        sortDone();
+    }
+
+
+
+    private void sortDate() {
+        Collections.sort(todos, new Comparator<Todo>() {
+            @Override
+            public int compare(Todo o1, Todo o2) {
+                int x =  (int) o1.getExpiry();
+                int y =  (int) o2.getExpiry();
+                System.out.println("compare: " + (x-y));
+                return x - y;
+            }
+        });
+        todoAdapter.notifyDataSetChanged();
+    }
+
+    private void sortFavourite() {
+        Collections.sort(todos, new Comparator<Todo>(){
+            @Override
+            public int compare(Todo o1, Todo o2) {
+                boolean b1 = o1.isFavourite();
+                boolean b2 = o2.isFavourite();
+
+                return (b1 == b2) ? 0 : b1 ? -1 : 1;
+            }
+        });
+        todoAdapter.notifyDataSetChanged();
+    }
+
+    private void sortDone() {
+        Collections.sort(todos, new Comparator<Todo>(){
+            @Override
+            public int compare(Todo o1, Todo o2) {
+                boolean b2 = o1.isDone();
+                boolean b1 = o2.isDone();
+
+                return (b1 == b2) ? 0 : b1 ? -1 : 1;
+            }
+        });
+        todoAdapter.notifyDataSetChanged();
+    }
+
+
+
+
     private void addTodo(Intent intent) {
         String intentTodo = intent.getSerializableExtra("todo").toString();
         Todo newTodo = (new Gson()).fromJson(String.valueOf(intentTodo), Todo.class);
-        if (!newTodo.name.equals("")) {
-            // todos.add(newTodo);
-            helper.insert(newTodo.name, newTodo.description, newTodo.status);
+        if (!newTodo.getName().equals("")) {
+            boolean insertSuccess = helper.insert(newTodo);
+            if (insertSuccess) {
+                createTodosRemote(newTodo);
+                todoAdapter.notifyDataSetChanged();
+            }
         }
+        todoAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)  {
+        MenuInflater inflater = new MenuInflater(context);
+        inflater.inflate(R.menu.menu_context, menu);
+        menu.add("Sort by Date and Importance").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                defaultSort();
+                return false;
+            }
+        });
+        menu.add("Sort by Importance and Date").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                reverseSort();
+                return false;
+            }
+        });
+
+        menu.add("Delete local todos").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                for (Todo todo : todos) {
+                    helper.deleteTodo(todo.getId()+ "");
+                }
+                todos = new ArrayList<Todo>();
+                todoAdapter.notifyDataSetChanged();
+                return false;
+            }
+        });
+
+        menu.add("Delete remote todos").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                Call<Todo> delteAll = apiInterface.delteAll();
+                delteAll.enqueue(new Callback<Todo>() {
+                    @Override
+                    public void onResponse(Call<Todo> call, Response<Todo> response) {
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<Todo> call, Throwable t) {
+                        System.out.println(t);
+                    }
+                });
+                return false;
+            }
+        });
+
+        menu.add("Sync").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                Cursor cursor = helper.getAllTodos();
+                if (cursor.moveToFirst()) {
+                    do {
+                        Todo databaseTodo = new Todo();
+                        databaseTodo.setId(cursor.getInt(0));
+                        databaseTodo.setName(cursor.getString(1));
+                        databaseTodo.setDescription((cursor.getString(2)));
+                        databaseTodo.setDone (cursor.getInt(3) == 1);
+                        databaseTodo.setExpiry(Long.parseLong(cursor.getString(4)));
+                        databaseTodo.setFavourite(cursor.getInt(5) == 1);
+                        databaseTodo.setContacts(new Gson().fromJson(cursor.getString(6), ArrayList.class));
+                        todos.add(databaseTodo);
+
+                    } while (cursor.moveToNext());
+                }
+
+                System.out.println(todos.isEmpty());
+                if (!todos.isEmpty()) {
+                    deleteAllTodosRemote();
+                } else {
+                    getTodosRemote();
+                }
+                return false;
+            }
+        });
+        return true;
     }
 
     private void setUpListViewListener() {
@@ -82,6 +347,25 @@ public class MainActivity extends AppCompatActivity {
         todoAdapter.notifyDataSetChanged();
         return true;
     }
+
+    public void onDoneButtonClick(View view) {
+        View v = (View) view.getParent();
+        CheckBox status = (CheckBox) v.findViewById(R.id.status);
+        //cBox.setTag(Integer.valueOf(position)); // set the tag so we can identify the correct row in the listener
+        //https://stackoverflow.com/questions/12647001/listview-with-custom-adapter-containing-checkboxes
+        for (Todo t : todos) {
+            if (t.getId() == (Long) status.getTag()) {
+                t.setDone(!t.isDone());
+
+                helper.updateStatus(t.isDone(), t.getId());
+
+            }
+        }
+
+        defaultSort();
+    }
+
+
 
     public void setupGUIElements() {
         listView = findViewById(R.id.todolist);

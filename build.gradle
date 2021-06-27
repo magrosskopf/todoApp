@@ -13,6 +13,7 @@ buildscript {
         // this is used for firebase
         classpath "com.google.gms:google-services:4.3.5"
 
+
     }
 }
 

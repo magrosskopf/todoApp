@@ -1,34 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <CheckBox
         android:id="@+id/status"
         android:layout_width="30dp"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:onClick="onDoneButtonClick" />
+
     <TextView
         android:id="@+id/todoName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""
-        android:textFontWeight="400"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="21dp"
+        android:layout_marginTop="10dp"
         android:layout_toRightOf="@+id/status"
-        android:padding="10dp"
-        android:layout_marginLeft="20dp"/>
+        android:padding="0dp"
+        android:paddingTop="10dp"
+        android:text="Name"
+        android:textAlignment="viewStart"
+        android:textFontWeight="400" />
+
     <TextView
         android:id="@+id/todoDescription"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Discription"
+        android:layout_alignStart="@+id/todoName"
         android:layout_below="@+id/todoName"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="30dp"
-        android:layout_marginLeft="60dp"
-        />
+        android:layout_marginBottom="0dp"
+        android:layout_marginLeft="0dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="Discription" />
+
+    <TextView
+        android:id="@+id/expiry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/todoDescription"
+        android:layout_below="@+id/todoDescription"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="TextView" />
+
     <Button
         android:id="@+id/optionbutton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
-        android:text="..." />
+        android:text="Details" />
+
+    <ImageView
+        android:id="@+id/favIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="0dp"
+        android:layout_toEndOf="@+id/todoName"
+        android:visibility="invisible"
+        app:srcCompat="@android:drawable/btn_star_big_on" />
 </RelativeLayout>
