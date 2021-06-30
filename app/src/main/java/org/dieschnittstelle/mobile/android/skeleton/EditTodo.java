@@ -67,10 +67,10 @@ public class EditTodo extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_todo);
         intent = getIntent();
-            String intentTodo = intent.getSerializableExtra("todo").toString();
-            todo = (new Gson()).fromJson(String.valueOf(intentTodo), Todo.class);
-            names = new ArrayList<>();
-                adapter = new ArrayAdapter(this, R.layout.simple_list_item, names);
+        String intentTodo = intent.getSerializableExtra("todo").toString();
+        todo = (new Gson()).fromJson(String.valueOf(intentTodo), Todo.class);
+        names = new ArrayList<>();
+        adapter = new ArrayAdapter(this, R.layout.simple_list_item, names);
         System.out.println("#####"+todo);
         name = findViewById(R.id.nameField);
         description = findViewById(R.id.descriptionField);
@@ -92,14 +92,15 @@ public class EditTodo extends AppCompatActivity {
         dateView.setText(d);
         MaterialDatePicker.Builder materialDateBuilder = MaterialDatePicker.Builder.datePicker().setSelection(todo.getExpiry());
         materialDateBuilder.setTitleText("SELECT A DATE");
-
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(todo.getExpiry());
 
         final MaterialDatePicker materialDatePicker = materialDateBuilder.build();
         MaterialTimePicker.Builder materialTimeBuilder = new MaterialTimePicker.Builder();
 
         materialTimeBuilder.setTimeFormat(TimeFormat.CLOCK_12H)
-                .setHour(new Date(todo.getExpiry()).getHours())
-                .setMinute(new Date(todo.getExpiry()).getMinutes());
+                .setHour(calendar.get(Calendar.HOUR_OF_DAY))
+                .setMinute(calendar.get(Calendar.MINUTE));
         final MaterialTimePicker materialTimePicker = materialTimeBuilder.build();
 
 
@@ -110,9 +111,10 @@ public class EditTodo extends AppCompatActivity {
                 min = materialTimePicker.getMinute();
                 Calendar timedate = Calendar.getInstance();
                 timedate.setTimeInMillis(timeInMili);
+                timedate.set(Calendar.HOUR_OF_DAY, hour);
+                timedate.set(Calendar.MINUTE, min);
                 long t = (long) timedate.getTimeInMillis();;
-                timeInMili = timeInMili + t;
-
+                timeInMili =  t;
                 String date = DateFormat.format("dd-MM-yyyy hh:mm", timedate).toString();
                 dateView.setText(date);
             }
@@ -123,8 +125,6 @@ public class EditTodo extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 materialDatePicker.show(getSupportFragmentManager(), "MATERIAL_DATE_PICKER");
-
-
             }
         });
 
@@ -132,15 +132,8 @@ public class EditTodo extends AppCompatActivity {
             @SuppressLint("SetTextI18n")
             @Override
             public void onPositiveButtonClick(Long selection) {
-
-                // if the user clicks on the positive
-                // button that is ok button update the
-                // selected date
                 timeInMili = selection;
                 materialTimePicker.show(getSupportFragmentManager(), "MATERIAL_TIME_PICKER");
-                // in the above statement, getHeaderText
-                // will return selected date preview from the
-                // dialog
             }
         });
 
@@ -228,7 +221,7 @@ public class EditTodo extends AppCompatActivity {
                 newTodo.setName(name.getText().toString());
                 newTodo.setDescription(description.getText().toString());
                 newTodo.setDone(status.isChecked());
-                newTodo.setExpiry(timeInMili);
+                newTodo.setExpiry(timeInMili );
                 newTodo.setFavourite(favourite.isChecked());
                 Toast.makeText(context, "Todo " + newTodo.getName() + " successfully updated.", Toast.LENGTH_LONG).show();
                 Intent intent = new Intent(this, MainActivity.class);

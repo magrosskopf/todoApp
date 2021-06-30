@@ -3,6 +3,10 @@ package org.dieschnittstelle.mobile.android.skeleton.data;
 import org.dieschnittstelle.mobile.android.skeleton.classes.User;
 import org.dieschnittstelle.mobile.android.skeleton.data.model.LoggedInUser;
 
+import androidx.lifecycle.MutableLiveData;
+
+import static java.lang.Thread.sleep;
+
 /**
  * Class that requests authentication and user information from the remote data source and
  * maintains an in-memory cache of login status and user credentials information.
@@ -44,12 +48,15 @@ public class LoginRepository {
         // @see https://developer.android.com/training/articles/keystore
     }
 
-    public Result<User> login(String username, String password) {
+ /*   public Result<User> login(String username, String password) {
         // handle login
-        Result<User> result = dataSource.login(username, password);
-        if (result instanceof Result.Success) {
-            setLoggedInUser(((Result.Success<User>) result).getData());
+
+        Result<User> result = dataSource.login(username, password);;
+
+
+        if (result.getValue() instanceof Result.Success) {
+            setLoggedInUser(((Result.Success<User>) result.getValue()).getData());
         }
-        return result;
-    }
+        return result.getValue();
+    } */
 }

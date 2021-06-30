@@ -29,6 +29,15 @@ import org.dieschnittstelle.mobile.android.skeleton.R;
 import org.dieschnittstelle.mobile.android.skeleton.ui.login.LoginViewModel;
 import org.dieschnittstelle.mobile.android.skeleton.ui.login.LoginViewModelFactory;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import static java.lang.Thread.sleep;
+
 public class LoginActivity extends AppCompatActivity {
 
     private LoginViewModel loginViewModel;
@@ -37,112 +46,129 @@ public class LoginActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        loginViewModel = new ViewModelProvider(this, new LoginViewModelFactory())
-                .get(LoginViewModel.class);
 
-        final EditText usernameEditText = findViewById(R.id.username);
-        final EditText passwordEditText = findViewById(R.id.password);
-        final Button loginButton = findViewById(R.id.login);
-        final ProgressBar loadingProgressBar = findViewById(R.id.loading);
+            loginViewModel = new ViewModelProvider(this, new LoginViewModelFactory())
+                    .get(LoginViewModel.class);
 
-        loginViewModel.getLoginFormState().observe(this, new Observer<LoginFormState>() {
-            @Override
-            public void onChanged(@Nullable LoginFormState loginFormState) {
-                if (loginFormState == null) {
-                    return;
+            final EditText usernameEditText = findViewById(R.id.username);
+            final EditText passwordEditText = findViewById(R.id.password);
+            final Button loginButton = findViewById(R.id.login);
+            final ProgressBar loadingProgressBar = findViewById(R.id.loading);
+
+            loginViewModel.getLoginFormState().observe(this, new Observer<LoginFormState>() {
+                @Override
+                public void onChanged(@Nullable LoginFormState loginFormState) {
+                    if (loginFormState == null) {
+                        return;
+                    }
+                    loginButton.setEnabled(loginFormState.isDataValid());
+                    if (loginFormState.getUsernameError() != null) {
+                        usernameEditText.setError(getString(loginFormState.getUsernameError()));
+                    }
+                    if (loginFormState.getPasswordError() != null) {
+                        passwordEditText.setError(getString(loginFormState.getPasswordError()));
+                    }
                 }
-                loginButton.setEnabled(loginFormState.isDataValid());
-                if (loginFormState.getUsernameError() != null) {
-                    usernameEditText.setError(getString(loginFormState.getUsernameError()));
+            });
+
+            loginViewModel.getLoginResult().observe(this, new Observer<LoginResult>() {
+                @Override
+                public void onChanged(@Nullable LoginResult loginResult) {
+                    if (loginResult == null) {
+                        return;
+                    }
+                    loadingProgressBar.setVisibility(View.GONE);
+                    if (loginResult.getError() != null) {
+                        showLoginFailed(loginResult.getError());
+                    }
+                    if (loginResult.getSuccess() != null) {
+                        updateUiWithUser(loginResult.getSuccess());
+                    }
+                    setResult(Activity.RESULT_OK);
+
+                    //Complete and destroy login activity once successful
+                    //finish();
                 }
-                if (loginFormState.getPasswordError() != null) {
-                    passwordEditText.setError(getString(loginFormState.getPasswordError()));
+            });
+
+            TextWatcher afterTextChangedListener = new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                    // ignore
                 }
-            }
-        });
 
-        loginViewModel.getLoginResult().observe(this, new Observer<LoginResult>() {
-            @Override
-            public void onChanged(@Nullable LoginResult loginResult) {
-                if (loginResult == null) {
-                    return;
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    // ignore
                 }
-                loadingProgressBar.setVisibility(View.GONE);
-                if (loginResult.getError() != null) {
-                    showLoginFailed(loginResult.getError());
-                }
-                if (loginResult.getSuccess() != null) {
-                    updateUiWithUser(loginResult.getSuccess());
-                }
-                setResult(Activity.RESULT_OK);
 
-                //Complete and destroy login activity once successful
-                //finish();
-            }
-        });
-
-        TextWatcher afterTextChangedListener = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // ignore
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // ignore
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                loginViewModel.loginDataChanged(usernameEditText.getText().toString(),
-                        passwordEditText.getText().toString());
-            }
-
-
-        };
-        //usernameEditText.addTextChangedListener(afterTextChangedListener);
-        usernameEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus) {
-                    // If view having focus.
-                } else {
+                @Override
+                public void afterTextChanged(Editable s) {
                     loginViewModel.loginDataChanged(usernameEditText.getText().toString(),
                             passwordEditText.getText().toString());
                 }
-            }
-        });
-
-        passwordEditText.addTextChangedListener(afterTextChangedListener);
 
 
-        passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-
-                    loginViewModel.login(usernameEditText.getText().toString(),
-                            passwordEditText.getText().toString());
+            };
+            //usernameEditText.addTextChangedListener(afterTextChangedListener);
+            usernameEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (hasFocus) {
+                        // If view having focus.
+                    } else {
+                        loginViewModel.loginDataChanged(usernameEditText.getText().toString(),
+                                passwordEditText.getText().toString());
+                    }
                 }
-                return false;
-            }
-        });
+            });
 
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadingProgressBar.setVisibility(View.VISIBLE);
-                new android.os.Handler().postDelayed(
-                        new Runnable() {
-                            public void run() {
-                                loginViewModel.login(usernameEditText.getText().toString(),
-                                        passwordEditText.getText().toString());;
-                            }
-                        }, 2000);
+            passwordEditText.addTextChangedListener(afterTextChangedListener);
 
 
-            }
-        });
+            passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if (actionId == EditorInfo.IME_ACTION_DONE) {
+
+                        loginViewModel.login(usernameEditText.getText().toString(),
+                                passwordEditText.getText().toString());
+                    }
+                    return false;
+                }
+            });
+
+            loginButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    loadingProgressBar.setVisibility(View.VISIBLE);
+                    new android.os.Handler().postDelayed(
+                            new Runnable() {
+                                public void run() {
+                                    loginViewModel.login(usernameEditText.getText().toString(),
+                                            passwordEditText.getText().toString());
+                                    ;
+                                }
+                            }, 2000);
+                }
+            });
+    }
+
+    private boolean checkConn()  {
+        try{
+            HttpURLConnection conn = (HttpURLConnection) new URL("http://10.0.2.2:8080/").openConnection();
+            conn.setConnectTimeout(1000);
+            conn.setReadTimeout(1000);
+            conn.setRequestMethod("GET");
+
+            conn.connect();
+            conn.getInputStream();
+
+            return true;
+        } catch (Exception e){
+            System.out.println("ASDF" + e);
+            return false;
+        }
     }
 
     private void updateUiWithUser(LoggedInUserView model) {

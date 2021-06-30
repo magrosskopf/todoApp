@@ -77,6 +77,9 @@ public class TodoListAdapter extends BaseAdapter implements View.OnClickListener
         });
     }
 
+    public void modifyData(ArrayList<Todo> listData) {
+        todoDataModeList = listData;
+    }
 
     private static class ViewHolder{
         CheckBox checkBox;

@@ -80,12 +80,14 @@ public class CreateTodo extends AppCompatActivity {
                 min = materialTimePicker.getMinute();
                 Calendar timedate = Calendar.getInstance();
                 timedate.setTimeInMillis(timeInMili);
+                timedate.set(Calendar.HOUR_OF_DAY, hour);
+                timedate.set(Calendar.MINUTE, min);
                 long t = (long) timedate.getTimeInMillis();;
-                timeInMili = timeInMili;
+                timeInMili = t;
 
                 String date = DateFormat.format("dd-MM-yyyy hh:mm", timedate).toString();
                 dateView.setText(date);
-                // TODO: 6/24/21 Zeit zum Expirydate hinzufügen 
+
             }
         });
 

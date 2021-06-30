@@ -85,13 +85,16 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("TAG", "onCreate: ", new Exception());
                 updateTodo(intent);
                 todoAdapter.notifyDataSetChanged();
+
             } else {
                 addTodo(intent);
                 todoAdapter.notifyDataSetChanged();
+                todoAdapter.modifyData(todos);
             }
         }
 
         defaultSort();
+
     }
 
     private void getTodosRemote() {
@@ -123,10 +126,7 @@ public class MainActivity extends AppCompatActivity {
         delteAll.enqueue(new Callback<Todo>() {
             @Override
             public void onResponse(Call<Todo> call, Response<Todo> response) {
-                for (Todo t : todos) {
-                    System.out.println("Print it ");
-                    createTodosRemote(t);
-                }
+
 
             }
 
@@ -135,6 +135,9 @@ public class MainActivity extends AppCompatActivity {
                 System.out.println(t);
             }
         });
+        for (Todo t : todos) {
+            createTodosRemote(t);
+        }
     }
 
     private void createTodosRemote(Todo todo) {
@@ -142,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
         create.enqueue(new Callback<Todo>() {
             @Override
             public void onResponse(Call<Todo> call, Response<Todo> response) {
-                System.out.println(response.body());
+                System.out.println("RESPONSE" + response.body());
             }
 
             @Override
@@ -161,6 +164,12 @@ public class MainActivity extends AppCompatActivity {
             boolean insertSuccess = helper.insert(newTodo);
             if (insertSuccess) {
                 updateTodoRemote(newTodo.getId() + "", newTodo);
+                for (Todo todo : todos) {
+                    if (todo.getId() == newTodo.getId()) {
+                        todos.set(todos.indexOf(todo), newTodo);
+                    }
+                }
+                todoAdapter.modifyData(todos);
             }
         }
 
@@ -186,12 +195,16 @@ public class MainActivity extends AppCompatActivity {
         sortFavourite();
         sortDate();
         sortDone();
+        todoAdapter.modifyData(todos);
+        todoAdapter.notifyDataSetChanged();
     }
 
     private void reverseSort() {
         sortDate();
         sortFavourite();
         sortDone();
+        todoAdapter.notifyDataSetChanged();
+
     }
 
 
@@ -206,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
                 return x - y;
             }
         });
-        todoAdapter.notifyDataSetChanged();
+        todoAdapter.modifyData(todos);
     }
 
     private void sortFavourite() {
@@ -219,7 +232,8 @@ public class MainActivity extends AppCompatActivity {
                 return (b1 == b2) ? 0 : b1 ? -1 : 1;
             }
         });
-        todoAdapter.notifyDataSetChanged();
+        todoAdapter.modifyData(todos);
+
     }
 
     private void sortDone() {
@@ -232,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
                 return (b1 == b2) ? 0 : b1 ? -1 : 1;
             }
         });
-        todoAdapter.notifyDataSetChanged();
+        todoAdapter.modifyData(todos);
     }
 
 
@@ -245,10 +259,10 @@ public class MainActivity extends AppCompatActivity {
             boolean insertSuccess = helper.insert(newTodo);
             if (insertSuccess) {
                 createTodosRemote(newTodo);
-                todoAdapter.notifyDataSetChanged();
+                todos.add(newTodo);
+                todoAdapter.modifyData(todos);
             }
         }
-        todoAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -277,6 +291,7 @@ public class MainActivity extends AppCompatActivity {
                     helper.deleteTodo(todo.getId()+ "");
                 }
                 todos = new ArrayList<Todo>();
+                todoAdapter.modifyData(todos);
                 todoAdapter.notifyDataSetChanged();
                 return false;
             }
