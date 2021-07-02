@@ -5,9 +5,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -41,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private Context context;
     private DatabaseHelper helper = new DatabaseHelper(this);
     private ApiInterface apiInterface;
+    private static final int PERMISSIONS_REQUEST_READ_CONTACTS = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +59,9 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         apiInterface = Api.getClient();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, PERMISSIONS_REQUEST_READ_CONTACTS);
+        }
         Cursor cursor = helper.getAllTodos();
         if (cursor.moveToFirst()) {
             do {
@@ -220,6 +227,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         todoAdapter.modifyData(todos);
+        todoAdapter.notifyDataSetChanged();
+
     }
 
     private void sortFavourite() {
@@ -233,6 +242,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         todoAdapter.modifyData(todos);
+        todoAdapter.notifyDataSetChanged();
 
     }
 
@@ -247,6 +257,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         todoAdapter.modifyData(todos);
+        todoAdapter.notifyDataSetChanged();
+
     }
 
 
@@ -371,9 +383,8 @@ public class MainActivity extends AppCompatActivity {
         for (Todo t : todos) {
             if (t.getId() == (Long) status.getTag()) {
                 t.setDone(!t.isDone());
-
                 helper.updateStatus(t.isDone(), t.getId());
-
+                todoAdapter.notifyDataSetChanged();
             }
         }
 

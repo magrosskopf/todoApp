@@ -44,6 +44,7 @@ public class Todo implements Serializable {
 
     // a default constructor
     public Todo() {
+        this.contacts = new ArrayList<>();
     }
 
     public long getId() {

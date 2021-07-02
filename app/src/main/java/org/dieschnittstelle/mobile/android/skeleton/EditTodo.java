@@ -1,10 +1,13 @@
 package org.dieschnittstelle.mobile.android.skeleton;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.format.DateFormat;
@@ -70,7 +73,7 @@ public class EditTodo extends AppCompatActivity {
         String intentTodo = intent.getSerializableExtra("todo").toString();
         todo = (new Gson()).fromJson(String.valueOf(intentTodo), Todo.class);
         names = new ArrayList<>();
-        adapter = new ArrayAdapter(this, R.layout.simple_list_item, names);
+        adapter = new ArrayAdapter(this, R.layout.simple_list_item, R.id.name, names);
         System.out.println("#####"+todo);
         name = findViewById(R.id.nameField);
         description = findViewById(R.id.descriptionField);
@@ -185,14 +188,16 @@ public class EditTodo extends AppCompatActivity {
                 Cursor c = null;
                 try {
                     c = getContentResolver().query(uri, new String[]{
-                        ContactsContract.Profile.DISPLAY_NAME,
-
+                        ContactsContract.Profile.DISPLAY_NAME_PRIMARY,
+                                    ContactsContract.Profile._ID
                             },
                             null, null, null);
 
                     if (c != null && c.moveToFirst()) {
-                        String displayname = c.getString(1);
-                        todo.addContact(uri.getLastPathSegment());
+                        String displayname = c.getString(0);
+                        names.add(displayname);
+                        adapter.notifyDataSetChanged();
+                        todo.addContact(c.getString(1));
                     }
                 } finally {
                     if (c != null) {
@@ -223,6 +228,7 @@ public class EditTodo extends AppCompatActivity {
                 newTodo.setDone(status.isChecked());
                 newTodo.setExpiry(timeInMili );
                 newTodo.setFavourite(favourite.isChecked());
+                newTodo.setContacts(todo.getContacts());
                 Toast.makeText(context, "Todo " + newTodo.getName() + " successfully updated.", Toast.LENGTH_LONG).show();
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.putExtra("todo", (new Gson()).toJson(newTodo));
@@ -241,12 +247,43 @@ public class EditTodo extends AppCompatActivity {
     private void setTodoData(Todo todo) {
         name.setText(todo.getName());
         description.setText(todo.getDescription());
-        if (todo.isDone()) {
-            status.isChecked();
-        }
-        if (todo.isFavourite()) {
-            favourite.isChecked();
+        status.setChecked(todo.isDone());
+        favourite.setChecked(todo.isFavourite());
+
+        if (todo.getContacts().size() != 0) {
+            for (String id : todo.getContacts()) {
+                retrieveContactName(id);
+            }
+            adapter.notifyDataSetChanged();
         }
 
+    }
+    private void retrieveContactName(String id) {
+
+        String contactName = null;
+
+
+
+        Uri uri= (ContactsContract.Contacts.CONTENT_URI);
+        // querying contact data store
+        Cursor cursor = getContentResolver().query(uri, new String[]{ContactsContract.Contacts.DISPLAY_NAME, ContactsContract.Contacts._ID}, null, null, null);
+        System.out.println("CONT" + cursor);
+
+        if (cursor.moveToFirst()) {
+            while (cursor.moveToNext()) {
+            if (cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID)).equals(id)){
+                contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                System.out.println("CONT" + contactName);
+                names.add(contactName + "");
+                adapter.notifyDataSetChanged();
+            }
+            // DISPLAY_NAME = The display name for the contact.
+            // HAS_PHONE_NUMBER =   An indicator of whether this contact has at least one phone number.
+        }
+        }
+
+        cursor.close();
+
+        Log.d("TAG,", "Contact Name: " + contactName);
     }
 }
