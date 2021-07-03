@@ -6,6 +6,7 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -28,6 +29,7 @@ import org.dieschnittstelle.mobile.android.skeleton.MainActivity;
 import org.dieschnittstelle.mobile.android.skeleton.R;
 import org.dieschnittstelle.mobile.android.skeleton.ui.login.LoginViewModel;
 import org.dieschnittstelle.mobile.android.skeleton.ui.login.LoginViewModelFactory;
+import org.dieschnittstelle.mobile.android.skeleton.util.Connection;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -35,6 +37,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.ExecutionException;
 
 import static java.lang.Thread.sleep;
 
@@ -47,7 +50,18 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-            loginViewModel = new ViewModelProvider(this, new LoginViewModelFactory())
+        AsyncTask<String, Boolean, Boolean> isConnected = new Connection().execute();
+        try {
+            if (!isConnected.get()){
+                Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
+            }
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        loginViewModel = new ViewModelProvider(this, new LoginViewModelFactory())
                     .get(LoginViewModel.class);
 
             final EditText usernameEditText = findViewById(R.id.username);

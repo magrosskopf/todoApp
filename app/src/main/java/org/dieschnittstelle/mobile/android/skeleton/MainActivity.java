@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,13 +21,16 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.Gson;
 
 import org.dieschnittstelle.mobile.android.skeleton.util.Api;
 import org.dieschnittstelle.mobile.android.skeleton.util.ApiInterface;
+import org.dieschnittstelle.mobile.android.skeleton.util.Connection;
 import org.dieschnittstelle.mobile.android.skeleton.util.DatabaseHelper;
 import org.dieschnittstelle.mobile.android.skeleton.classes.Todo;
 import org.dieschnittstelle.mobile.android.skeleton.classes.TodoListAdapter;
@@ -34,6 +38,7 @@ import org.dieschnittstelle.mobile.android.skeleton.classes.TodoListAdapter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private Context context;
     private DatabaseHelper helper = new DatabaseHelper(this);
     private ApiInterface apiInterface;
+    private TextView errorMessage;
     private static final int PERMISSIONS_REQUEST_READ_CONTACTS = 100;
 
     @Override
@@ -51,9 +57,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setupGUIElements();
+        AsyncTask<String, Boolean, Boolean> isConnected = new Connection().execute();
+        try {
+            if (!isConnected.get()){
+                errorMessage = findViewById(R.id.errorMessage);
+                errorMessage.setVisibility(View.VISIBLE);
+            }
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         todos = new ArrayList<Todo>();
         todoAdapter = new TodoListAdapter(this, todos);
         listView.setAdapter(todoAdapter);
+
         context = getApplicationContext();
         setUpListViewListener();
         Intent intent = getIntent();
@@ -381,14 +400,15 @@ public class MainActivity extends AppCompatActivity {
         //cBox.setTag(Integer.valueOf(position)); // set the tag so we can identify the correct row in the listener
         //https://stackoverflow.com/questions/12647001/listview-with-custom-adapter-containing-checkboxes
         for (Todo t : todos) {
+            System.out.println("Long" + status.getTag() + t.getId());
             if (t.getId() == (Long) status.getTag()) {
+
                 t.setDone(!t.isDone());
                 helper.updateStatus(t.isDone(), t.getId());
-                todoAdapter.notifyDataSetChanged();
+
             }
         }
-
-        defaultSort();
+        System.out.println("Long" );
     }
 
 

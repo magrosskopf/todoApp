@@ -6,6 +6,20 @@
     android:layout_height="match_parent"
     tools:context="org.dieschnittstelle.mobile.android.skeleton.MainActivity">
 
+    <TextView
+        android:id="@+id/errorMessage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginStart="16dp"
+        android:text="! No connection to the server. Only local todos are available."
+        android:textColor="#FF0000"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/openDialogBtn"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/openDialogBtn"
         android:layout_width="wrap_content"

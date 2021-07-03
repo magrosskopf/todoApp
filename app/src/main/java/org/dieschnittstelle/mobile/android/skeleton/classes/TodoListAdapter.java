@@ -111,7 +111,8 @@ public class TodoListAdapter extends BaseAdapter implements View.OnClickListener
             viewHolder.favIcon = (ImageView) vi.findViewById(R.id.favIcon);
             Todo todo = (Todo) getItem(pos);
             todoIsExpired(todo, vi);
-            vi.findViewById(R.id.status).setTag(Long.valueOf(todo.getId()));
+            viewHolder.checkBox.setTag(Long.valueOf(todo.getId()));
+
             /*We can use setTag() and getTag() to set and get custom objects as per our requirement.
             The setTag() method takes an argument of type Object, and getTag() returns an Object.*/
             vi.setTag(viewHolder);
