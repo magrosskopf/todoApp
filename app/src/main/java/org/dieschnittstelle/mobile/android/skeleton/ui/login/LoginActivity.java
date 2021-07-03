@@ -44,12 +44,13 @@ import static java.lang.Thread.sleep;
 public class LoginActivity extends AppCompatActivity {
 
     private LoginViewModel loginViewModel;
+    private TextView errorMessageLogin;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
+        errorMessageLogin = findViewById(R.id.errorMessageLogin);
         AsyncTask<String, Boolean, Boolean> isConnected = new Connection().execute();
         try {
             if (!isConnected.get()){
@@ -114,6 +115,8 @@ public class LoginActivity extends AppCompatActivity {
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
                     // ignore
+                    errorMessageLogin.setVisibility(View.INVISIBLE);
+
                 }
 
                 @Override
@@ -129,6 +132,7 @@ public class LoginActivity extends AppCompatActivity {
                 public void onFocusChange(View v, boolean hasFocus) {
                     if (hasFocus) {
                         // If view having focus.
+                        errorMessageLogin.setVisibility(View.INVISIBLE);
                     } else {
                         loginViewModel.loginDataChanged(usernameEditText.getText().toString(),
                                 passwordEditText.getText().toString());
@@ -168,22 +172,7 @@ public class LoginActivity extends AppCompatActivity {
             });
     }
 
-    private boolean checkConn()  {
-        try{
-            HttpURLConnection conn = (HttpURLConnection) new URL("http://10.0.2.2:8080/").openConnection();
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
-            conn.setRequestMethod("GET");
 
-            conn.connect();
-            conn.getInputStream();
-
-            return true;
-        } catch (Exception e){
-            System.out.println("ASDF" + e);
-            return false;
-        }
-    }
 
     private void updateUiWithUser(LoggedInUserView model) {
         String welcome = getString(R.string.welcome) + model.getDisplayName();
@@ -194,6 +183,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void showLoginFailed(@StringRes Integer errorString) {
+        errorMessageLogin.setVisibility(View.VISIBLE);
         Toast.makeText(getApplicationContext(), errorString, Toast.LENGTH_SHORT).show();
     }
 }
