@@ -115,7 +115,7 @@ public class LoginActivity extends AppCompatActivity {
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
                     // ignore
-                    errorMessageLogin.setVisibility(View.INVISIBLE);
+
 
                 }
 
@@ -123,21 +123,42 @@ public class LoginActivity extends AppCompatActivity {
                 public void afterTextChanged(Editable s) {
                     loginViewModel.loginDataChanged(usernameEditText.getText().toString(),
                             passwordEditText.getText().toString());
+                    errorMessageLogin.setVisibility(View.INVISIBLE);
                 }
 
 
             };
+
+        usernameEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                errorMessageLogin.setVisibility(View.INVISIBLE);
+
+            }
+        });
+
+
             //usernameEditText.addTextChangedListener(afterTextChangedListener);
             usernameEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
                 public void onFocusChange(View v, boolean hasFocus) {
                     if (hasFocus) {
                         // If view having focus.
-                        errorMessageLogin.setVisibility(View.INVISIBLE);
                     } else {
                         loginViewModel.loginDataChanged(usernameEditText.getText().toString(),
                                 passwordEditText.getText().toString());
                     }
                 }
+
             });
 
             passwordEditText.addTextChangedListener(afterTextChangedListener);

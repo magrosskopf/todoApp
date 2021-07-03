@@ -64,12 +64,12 @@ public class CreateTodo extends AppCompatActivity {
         MaterialDatePicker.Builder materialDateBuilder = MaterialDatePicker.Builder.datePicker().setSelection(MaterialDatePicker.todayInUtcMilliseconds());
         materialDateBuilder.setTitleText("SELECT A DATE");
         final MaterialDatePicker materialDatePicker = materialDateBuilder.build();
-
+        Date currentTime = Calendar.getInstance().getTime();
         MaterialTimePicker.Builder materialTimeBuilder = new MaterialTimePicker.Builder();
 
         materialTimeBuilder.setTimeFormat(TimeFormat.CLOCK_12H)
-                .setHour(12)
-                .setMinute(10);
+                .setHour(currentTime.getHours())
+                .setMinute(currentTime.getMinutes());
         final MaterialTimePicker materialTimePicker = materialTimeBuilder.build();
 
 
